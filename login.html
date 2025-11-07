@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Givan On'el | Secure Login</title>
+  <link rel="stylesheet" href="login.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="login-container">
+    <!-- Logo & Branding -->
+    <div class="login-header">
+      <div class="logo-wrapper">
+        <img src="images/logo.svg" alt="Bot Logo" class="logo-icon" />
+      </div>
+      <h1 class="brand-title">Adaptive Trading Bot</h1>
+      <p class="brand-subtitle">v2.0 | Secure Access Portal</p>
+    </div>
+
+    <!-- Login Form -->
+    <form id="loginForm" class="login-form">
+      <div class="form-group">
+        <label for="email" class="form-label">Email Address</label>
+        <input type="email" id="email" class="form-input" placeholder="you@example.com" required />
+      </div>
+
+      <div class="form-group">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" id="password" class="form-input" placeholder="Enter your password" required />
+      </div>
+
+      <div class="form-footer">
+        <label class="remember-label">
+          <input type="checkbox" id="remember" /> Remember me
+        </label>
+        <a href="#" class="forgot-link">Forgot Password?</a>
+      </div>
+
+      <button type="submit" class="btn btn-primary">
+        <span class="btn-icon">🔓</span> Log In
+      </button>
+    </form>
+
+    <!-- Footer -->
+    <footer class="login-footer">
+      <p class="footer-text">
+        © 2025 Givan On'el Adaptive Systems | Powered by Advanced Intelligence
+      </p>
+    </footer>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading" class="loading-overlay hidden">
+    <div class="loading-spinner"></div>
+    <p class="loading-text">Authenticating...</p>
+  </div>
+
+  <script src="login.js"></script>
+</body>
+</html>

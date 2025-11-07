@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Givan On'el Adaptive Trading Bot v2.0 | Advanced Intelligence</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+        <p id="loadingText" class="loading-text">Please wait...</p>
+    </div>
+
+    <!-- Main Container -->
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="brand">
+                    <div class="logo-icon">
+                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M16 4L4 10L16 16L28 10L16 4Z" fill="url(#gradient1)"/>
+                            <path d="M4 16L16 22L28 16" stroke="url(#gradient2)" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M4 22L16 28L28 22" stroke="url(#gradient2)" stroke-width="2" stroke-linecap="round"/>
+                            <defs>
+                                <linearGradient id="gradient1" x1="4" y1="4" x2="28" y2="16" gradientUnits="userSpaceOnUse">
+                                    <stop stop-color="#6366F1"/>
+                                    <stop offset="1" stop-color="#8B5CF6"/>
+                                </linearGradient>
+                                <linearGradient id="gradient2" x1="4" y1="16" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                                    <stop stop-color="#8B5CF6"/>
+                                    <stop offset="1" stop-color="#EC4899"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="brand-title">Adaptive Trading Bot</h1>
+                        <p class="brand-subtitle">v2.0 Advanced Intelligence</p>
+                    </div>
+                </div>
+                <div class="header-status">
+                    <div class="status-badge">
+                        <span class="status-dot"></span>
+                        <span id="status" class="status-text">Idle</span>
+                    </div>
+                    <div id="tradesCount" class="trades-count">Trades: 0</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- Left Panel - Controls & Configuration -->
+            <aside class="left-panel">
+                <!-- Connection Section -->
+                <section class="panel-section">
+                    <h2 class="section-title">
+                        <span class="title-icon">🔐</span>
+                        Connection
+                    </h2>
+                    <div class="form-group">
+                        <label for="token" class="form-label">API Token</label>
+                        <input 
+                            type="password" 
+                            id="token" 
+                            class="form-input" 
+                            placeholder="Enter your Deriv API token"
+                            autocomplete="off"
+                        />
+                        <p class="form-hint">Demo tokens recommended for testing</p>
+                    </div>
+                    <button id="connectBtn" class="btn btn-primary btn-lg">
+                        <span class="btn-icon">⚡</span>
+                        Connect & Authorize
+                    </button>
+                </section>
+
+                <!-- Trading Parameters -->
+                <section class="panel-section">
+                    <h2 class="section-title">
+                        <span class="title-icon">⚙️</span>
+                        Trading Parameters
+                    </h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="symbol" class="form-label">Symbol</label>
+                            <select id="symbol" class="form-select">
+                                <option value="R_10">Volatility 10 Index</option>
+                                <option value="R_25">Volatility 25 Index</option>
+                                <option value="R_50">Volatility 50 Index</option>
+                                <option value="R_75">Volatility 75 Index</option>
+                                <option value="R_100">Volatility 100 Index</option>
+                                <option value="1HZ10V">Volatility 10 (1s) Index</option>
+                                <option value="1HZ25V">Volatility 25 (1s) Index</option>
+                                <option value="1HZ50V">Volatility 50 (1s) Index</option>
+                                <option value="1HZ75V">Volatility 75 (1s) Index</option>
+                                <option value="1HZ100V">Volatility 100 (1s) Index</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="granularity" class="form-label">Candle Period</label>
+                            <select id="granularity" class="form-select">
+                                <option value="60">1 Minute</option>
+                                <option value="120">2 Minutes</option>
+                                <option value="180">3 Minutes</option>
+                                <option value="300">5 Minutes</option>
+                                <option value="600">10 Minutes</option>
+                                <option value="900">15 Minutes</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="stake" class="form-label">Stake Amount (USD)</label>
+                            <input 
+                                type="number" 
+                                id="stake" 
+                                class="form-input" 
+                                value="1.0" 
+                                min="0.35" 
+                                step="0.01"
+                            />
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Mode Selection -->
+                <section class="panel-section">
+                    <h2 class="section-title">
+                        <span class="title-icon">🎯</span>
+                        Trading Mode
+                    </h2>
+                    <div class="mode-toggle">
+                        <label class="toggle-option">
+                            <input type="checkbox" id="liveMode" class="toggle-checkbox">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">
+                                <span class="toggle-label-text">Simulation Mode</span>
+                                <span class="toggle-label-live">Live Trading</span>
+                            </span>
+                        </label>
+                        <p class="mode-warning hidden" id="liveWarning">
+                            ⚠️ Live mode uses real money. Auto-execution enabled.
+                        </p>
+                    </div>
+                    <div id="confirmLiveGroup" class="confirm-group" style="display: none;">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="confirmLive" class="checkbox-input">
+                            <span class="checkbox-text">I understand the risks</span>
+                        </label>
+                    </div>
+                </section>
+
+                <!-- Control Buttons -->
+                <section class="panel-section">
+                    <h2 class="section-title">
+                        <span class="title-icon">🎮</span>
+                        Controls
+                    </h2>
+                    <div class="button-group">
+                        <button id="startAutoBtn" class="btn btn-success" disabled>
+                            <span class="btn-icon">▶️</span>
+                            Start Auto Trading
+                        </button>
+                        <button id="stopAutoBtn" class="btn btn-danger" disabled>
+                            <span class="btn-icon">⏹️</span>
+                            Stop Trading
+                        </button>
+                        <button id="clearHistoryBtn" class="btn btn-secondary">
+                            <span class="btn-icon">🗑️</span>
+                            Clear History
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Indicators Display -->
+                <section class="panel-section indicators-section">
+                    <h2 class="section-title">
+                        <span class="title-icon">📊</span>
+                        Technical Indicators
+                    </h2>
+                    <ul id="indList" class="indicators-list">
+                        <li class="indicator-item">
+                            <span class="indicator-label">MA(14):</span>
+                            <span class="indicator-value">-</span>
+                        </li>
+                        <li class="indicator-item">
+                            <span class="indicator-label">RSI(14):</span>
+                            <span class="indicator-value">-</span>
+                        </li>
+                        <li class="indicator-item">
+                            <span class="indicator-label">Volatility:</span>
+                            <span class="indicator-value">-</span>
+                        </li>
+                    </ul>
+                </section>
+            </aside>
+
+            <!-- Center Panel - Chart & Decision -->
+            <div class="center-panel">
+                <!-- Chart Section -->
+                <section class="chart-section">
+                    <div class="chart-header">
+                        <h2 class="section-title">
+                            <span class="title-icon">📈</span>
+                            Live Chart Analysis
+                        </h2>
+                        <span id="lastUpdated" class="last-updated">Last Updated: --</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="candleChart"></canvas>
+                    </div>
+                </section>
+
+                <!-- Decision Display -->
+                <section class="decision-section">
+                    <h2 class="section-title">
+                        <span class="title-icon">🤖</span>
+                        AI Decision Engine
+                    </h2>
+                    <div class="decision-display">
+                        <div class="decision-content">
+                            <p id="decisionText" class="decision-text">
+                                Awaiting market data...
+                            </p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Panel - Activity Feed & History -->
+            <aside class="right-panel">
+                <!-- Activity Feed -->
+                <section class="panel-section feed-section">
+                    <h2 class="section-title">
+                        <span class="title-icon">📡</span>
+                        Activity Feed
+                    </h2>
+                    <div id="feed" class="activity-feed"></div>
+                </section>
+
+                <!-- Trade History -->
+                <section class="panel-section history-section">
+                    <h2 class="section-title">
+                        <span class="title-icon">📜</span>
+                        Trade History
+                    </h2>
+                    <div id="history" class="trade-history"></div>
+                </section>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="candles.js"></script>
+    <script src="decisions.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
