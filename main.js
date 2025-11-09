@@ -47,7 +47,7 @@ let contractLock = {
     activeContractId: null,
     purchasePending: false,
     lockTimestamp: null,
-    maxLockDuration: 300000 // 5 minutes max lock time as safety
+    maxLockDuration: 100000 // 5 minutes max lock time as safety
 };
 
 function lockContract(contractId = null) {
@@ -210,7 +210,7 @@ async function autoCheck() {
     updateIndicatorsUI(d.indicators);
     appendFeed(`Decision: ${d.action} (${d.reason})`, 'info');
 
-    if (d.action === 'HOLD' || d.confidence < 0.65) {
+    if (d.action === 'HOLD' || d.confidence < 0.55) {
         appendFeed(`Holding position - Signal strength insufficient (Conf: ${(d.confidence * 100).toFixed(0)}%)`, 'info');
         return;
     }

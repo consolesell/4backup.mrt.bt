@@ -189,8 +189,8 @@ function confirmDecision(decision, indicators, recentResults, confidence, tempor
         return trade.result === 'LOSS' ? count + 1 : 0;
     }, 0);
     
-    if (consecutiveLosses >= 3) {
-        adjustedConfidence *= 0.75;
+    if (consecutiveLosses >= 4) {
+        adjustedConfidence *= 0.8;
         adjustments.push('Loss streak penalty');
         
         // Pause aggressive trades
@@ -210,7 +210,7 @@ function confirmDecision(decision, indicators, recentResults, confidence, tempor
     }
     
     // Volatility safety check
-    if (indicators.volatility > 0.02 && consecutiveLosses >= 2) {
+    if (indicators.volatility > 0.025 && consecutiveLosses >= 3) {
         adjustedDecision = 'HOLD';
         adjustedConfidence = 0;
         adjustments.push('High volatility + losses → HOLD');
@@ -239,7 +239,7 @@ function confirmDecision(decision, indicators, recentResults, confidence, tempor
     }
     
     // Confidence floor check
-    if (adjustedConfidence < 0.55 && adjustedDecision !== 'HOLD') {
+    if (adjustedConfidence < 0.45 && adjustedDecision !== 'HOLD') {
         adjustedDecision = 'HOLD';
         adjustments.push('Confidence below threshold');
     }
@@ -265,10 +265,10 @@ function preDecisionLayerAnalysis(candles, indicators) {
     const ma50 = indicators.ma50Now;
     const price = candles[candles.length - 1].close;
     
-    if (ma14 > ma50 * 1.003) {
+    if (ma14 > ma50 * 1.002) {
         environment.trend = 'UPTREND';
         environment.strength = Math.min((ma14 / ma50 - 1) * 100, 1);
-    } else if (ma14 < ma50 * 0.997) {
+    } else if (ma14 < ma50 * 0.998) {
         environment.trend = 'DOWNTREND';
         environment.strength = Math.min((1 - ma14 / ma50) * 100, 1);
     } else {
@@ -377,7 +377,7 @@ function calculateAdaptiveConfidence(compositeSignal, indicators, regime, mood, 
     }
     
     // Cap confidence
-    return Math.max(0.2, Math.min(0.95, confidence));
+    return Math.max(0.25, Math.min(0.98, confidence*1.05));
 }
 
 /* ---------- Adaptive Duration Optimization ---------- */
@@ -570,12 +570,12 @@ function advancedDecisionEngine(candles) {
     
     // Apply environment and mood filters
     const environmentMultiplier = environment.clarity > 0.6 ? 1.1 : 0.95;
-    const adjustedThreshold = 2.5 / environmentMultiplier;
+    const adjustedThreshold = 2.0 / environmentMultiplier;
     
-    if (compositeSignal > adjustedThreshold && baseConfidence > 0.65) {
+    if (compositeSignal > adjustedThreshold && baseConfidence > 0.55) {
         action = compositeSignal > (4 / environmentMultiplier) ? 'STRONG BUY' : 'BUY';
         reason = `Bullish composite signal (${compositeSignal.toFixed(2)}) | ${marketRegime.type} | ${pattern.pattern} | ${mood.mood}`;
-    } else if (compositeSignal < -adjustedThreshold && baseConfidence > 0.65) {
+    } else if (compositeSignal < -adjustedThreshold && baseConfidence > 0.55) {
         action = compositeSignal < -(4 / environmentMultiplier) ? 'STRONG SELL' : 'SELL';
         reason = `Bearish composite signal (${compositeSignal.toFixed(2)}) | ${marketRegime.type} | ${pattern.pattern} | ${mood.mood}`;
     } else if (Math.abs(compositeSignal) > 1.5 && baseConfidence > 0.7 && environment.clarity > 0.5) {
