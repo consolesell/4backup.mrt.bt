@@ -13,6 +13,7 @@
  - Safety: Live mode requires single confirmation
  - Automatic contract purchase without user prompts
  - CONTRACT LOCKING: Only one active contract at a time (FIXED)
+ - PROFIT THRESHOLD: Automatic sell when target profit is reached
 */
 
 /* ---------- Config ---------- */
@@ -87,6 +88,7 @@ const tokenInput = document.getElementById('token');
 const symbolEl = document.getElementById('symbol');
 const granEl = document.getElementById('granularity');
 const stakeEl = document.getElementById('stake');
+const profitThresholdInput = document.getElementById('profitThreshold');
 const connectBtn = document.getElementById('connectBtn');
 const startAutoBtn = document.getElementById('startAutoBtn');
 const stopAutoBtn = document.getElementById('stopAutoBtn');
@@ -361,7 +363,7 @@ function connectAndAuthorize() {
                 mode: 'LIVE',
                 symbol: buy.symbol,
                 amount: buy.buy_price,
-                decision: buy.contract_type === 'BUY' ? 'CALL' : 'PUT',
+                decision: buy.contract_type === 'CALL' ? 'CALL' : 'PUT',
                 result: 'PENDING',
                 contract_id: buy.contract_id,
                 profit: 0,
@@ -378,6 +380,24 @@ function connectAndAuthorize() {
             if (poc.contract_id) {
                 const hist = JSON.parse(localStorage.getItem('tradeHistory') || '[]');
                 const idx = hist.findIndex(h => h.contract_id === poc.contract_id);
+                
+                // CHECK PROFIT THRESHOLD AND SELL IF MET
+                if (poc.status === 'open' && poc.profit !== undefined && profitThresholdInput) {
+                    const currentProfit = parseFloat(poc.profit);
+                    const threshold = parseFloat(profitThresholdInput.value) || 0.5;
+                    
+                    if (currentProfit >= threshold) {
+                        appendFeed(`💰 Profit threshold hit! Current: $${currentProfit.toFixed(2)} >= $${threshold.toFixed(2)} - Selling contract ${poc.contract_id}`, 'success');
+                        
+                        try {
+                            ws.send(JSON.stringify({ sell: poc.contract_id, price: poc.bid_price }));
+                            appendFeed(`Sell order sent for contract ${poc.contract_id}`, 'success');
+                        } catch (e) {
+                            appendFeed(`Sell failed: ${e.message}`, 'error');
+                        }
+                    }
+                }
+                
                 if (idx >= 0) {
                     const rec = hist[idx];
                     const previousStatus = rec.result;
@@ -385,15 +405,18 @@ function connectAndAuthorize() {
                     
                     if (poc.profit !== undefined) {
                         rec.profit = parseFloat(poc.profit);
-                        accountBalance += rec.profit;
+                        // Update balance incrementally to avoid double-counting
+                        if (!rec.previous_profit) rec.previous_profit = 0;
+                        accountBalance += (rec.profit - rec.previous_profit);
+                        rec.previous_profit = rec.profit;
                     }
                     
                     hist[idx] = rec;
                     localStorage.setItem('tradeHistory', JSON.stringify(hist));
                     renderHistory();
                     
-                    // Unlock when contract is settled (won or lost)
-                    if ((rec.result === 'WON' || rec.result === 'LOST') && previousStatus === 'PENDING') {
+                    // Unlock when contract is settled (won, lost, or sold)
+                    if ((rec.result === 'WON' || rec.result === 'LOST' || rec.result === 'SOLD') && previousStatus === 'PENDING') {
                         appendFeed(`Contract ${poc.contract_id} settled: ${rec.result} (${rec.profit.toFixed(2)})`, rec.profit > 0 ? 'success' : 'error');
                         
                         // Release the lock when contract completes
@@ -402,10 +425,15 @@ function connectAndAuthorize() {
                             updateBalanceDisplay();
                         }
                     } else if (rec.result === 'OPEN') {
-                        appendFeed(`Contract ${poc.contract_id} is active`, 'info');
+                        appendFeed(`Contract ${poc.contract_id} active - Profit: $${rec.profit.toFixed(2)}`, 'info');
                     }
                 }
             }
+            return;
+        }
+
+        if (data.sell) {
+            appendFeed(`Contract sold successfully - Transaction ID: ${data.sell.transaction_id}`, 'success');
             return;
         }
     };
@@ -514,6 +542,7 @@ function init() {
     if (settings.symbol) symbolEl.value = settings.symbol;
     if (settings.granularity) granEl.value = settings.granularity;
     if (settings.stake) stakeEl.value = settings.stake;
+    if (settings.profitThreshold && profitThresholdInput) profitThresholdInput.value = settings.profitThreshold;
 
     // Save on changes
     symbolEl.addEventListener('change', () => { 
@@ -528,6 +557,14 @@ function init() {
         settings.stake = stakeEl.value; 
         localStorage.setItem('botSettings', JSON.stringify(settings)); 
     });
+    
+    if (profitThresholdInput) {
+        profitThresholdInput.addEventListener('input', () => { 
+            settings.profitThreshold = profitThresholdInput.value; 
+            localStorage.setItem('botSettings', JSON.stringify(settings));
+            appendFeed(`Profit threshold updated to $${profitThresholdInput.value}`, 'info');
+        });
+    }
 
     renderHistory();
     setStatus('Idle - Adaptive Intelligence Ready', 'var(--muted-color)');
@@ -537,12 +574,13 @@ function init() {
     appendFeed('✓ DurationModel: Adaptive temporal optimization ready', 'success');
     appendFeed('✓ Automatic contract execution enabled', 'success');
     appendFeed('✓ Contract locking system: ONE TRADE AT A TIME', 'success');
+    appendFeed('✓ Profit threshold automation: Auto-sell at target profit', 'success');
     appendFeed('Enter token and connect to begin trading', 'info');
 }
 init();
 
 /* Expose for manual triggers */
-window.fetchCandlesNow = () => fetchCandles(symbolEl.value, parseInt(granEl.value, 10));
+window.fetchCandlesNow = () => fetchCanles(symbolEl.value, parseInt(granEl.value, 10));
 window.forceUnlock = () => {
     unlockContract();
     appendFeed('🔓 Manual unlock executed', 'warn');
