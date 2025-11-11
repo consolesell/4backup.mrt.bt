@@ -234,7 +234,7 @@ async function autoCheck() {
         symbol,
         contract_type,
         duration: durationOptimization.duration,
-        duration_unit: 's',
+        duration_unit: 'm',
         decision: d.action,
         decisionObj: d
     };
