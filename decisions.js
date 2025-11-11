@@ -430,7 +430,8 @@ function optimizeTradeDuration(decision, regime, volatility, pattern) {
     }
     
     const optimizedDuration = Math.round(baseGranularity * durationMultiplier);
-    const finalDuration = Math.max(baseGranularity, Math.min(optimizedDuration, baseGranularity * 3));
+    // Force minimum 15 minutes duration
+    const finalDuration = Math.max(15, optimizedDuration / 60);
     
     return {
         duration: finalDuration,
