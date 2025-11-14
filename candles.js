@@ -233,6 +233,46 @@ function identifyCandlestickPattern(candles) {
         c2.close < c1.close && c3.close < c2.close) {
         return { pattern: 'THREE_BLACK_CROWS', strength: 0.9, signal: 'STRONG_BEARISH' };
     }
+
+    // Example extension (add inside identifyCandlestickPattern):
+
+// Bullish Harami
+if (c2.close < c2.open && c3.open > c3.close && Math.abs(c3.close - c3.open) < Math.abs(c2.close - c2.open) &&
+    c3.open > c2.close && c3.close < c2.open) {
+    return { pattern: 'BULLISH_HARAMI', strength: 0.75, signal: 'BULLISH' };
+}
+
+// Bearish Harami
+if (c2.close > c2.open && c3.open < c3.close && Math.abs(c3.close - c3.open) < Math.abs(c2.close - c2.open) &&
+    c3.open < c2.close && c3.close > c2.open) {
+    return { pattern: 'BEARISH_HARAMI', strength: 0.75, signal: 'BEARISH' };
+}
+
+// Morning Star
+if (c1.close < c1.open && // Large down
+    Math.abs(c2.close - c2.open) < (c1.close - c1.open) * 0.5 && // Small body, gaps
+    c3.close > c3.open && c3.close > ((c1.open + c1.close)/2)) { // Large up closes into 1st
+    return { pattern: 'MORNING_STAR', strength: 0.85, signal: 'BULLISH' };
+}
+
+// Evening Star
+if (c1.close > c1.open &&
+    Math.abs(c2.close - c2.open) < (c1.close - c1.open) * 0.5 &&
+    c3.close < c3.open && c3.close < ((c1.open + c1.close)/2)) {
+    return { pattern: 'EVENING_STAR', strength: 0.85, signal: 'BEARISH' };
+}
+
+// Tweezer Top
+if (c2.high === c3.high && c2.close > c2.open && c3.close < c3.open) {
+    return { pattern: 'TWEEZER_TOP', strength: 0.8, signal: 'BEARISH' };
+}
+
+// Tweezer Bottom
+if (c2.low === c3.low && c2.close < c2.open && c3.close > c3.open) {
+    return { pattern: 'TWEEZER_BOTTOM', strength: 0.8, signal: 'BULLISH' };
+}
+
+// Add additional patterns similarly...
     
     return { pattern: 'NONE', strength: 0, signal: 'NEUTRAL' };
 }
