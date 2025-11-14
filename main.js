@@ -48,7 +48,7 @@ let contractLock = {
     activeContractId: null,
     purchasePending: false,
     lockTimestamp: null,
-    maxLockDuration: 100000 // 5 minutes max lock time as safety
+    maxLockDuration: 900000 // 5 minutes max lock time as safety
 };
 
 function lockContract(contractId = null) {
