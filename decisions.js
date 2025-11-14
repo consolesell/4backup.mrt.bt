@@ -1,5 +1,3 @@
-// decisions.js
-
 /* ---------- Enhanced Configuration & State ---------- */
 const decisionAgents = [
     { name: 'trend_focus', weights: { ma: 1.3, momentum: 0.7, rsi: 0.9, bb: 1.0 }, wins: 0, trades: 0 },
@@ -236,6 +234,17 @@ function confirmDecision(decision, indicators, recentResults, confidence, tempor
             adjustedConfidence *= 0.85;
             adjustments.push('Pattern-decision conflict');
         }
+    }
+
+    // Trend-alignment veto
+    if (indicators.trend === 'UPTREND' && indicators.strength > 0.7 && adjustedDecision.includes('SELL')) {
+        adjustedDecision = 'HOLD';
+        adjustedConfidence = 0;
+        adjustments.push('Vetoed SELL against strong uptrend');
+    } else if (indicators.trend === 'DOWNTREND' && indicators.strength > 0.7 && adjustedDecision.includes('BUY')) {
+        adjustedDecision = 'HOLD';
+        adjustedConfidence = 0;
+        adjustments.push('Vetoed BUY against strong downtrend');
     }
     
     // Confidence floor check
@@ -587,7 +596,7 @@ function advancedDecisionEngine(candles) {
     }
     
     // Multi-stage confirmation
-    const confirmed = confirmDecision(action, { pattern, volatility, atr: atrNow, bbNow }, recentTrades, baseConfidence, temporal);
+    const confirmed = confirmDecision(action, { pattern, volatility, atr: atrNow, bbNow, trend: environment.trend, strength: environment.strength }, recentTrades, baseConfidence, temporal);
     
     // Check for mood-decision conflict
     if (mood.mood === 'BULLISH' && confirmed.decision.includes('SELL') && mood.strength > 0.6) {
