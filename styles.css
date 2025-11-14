@@ -645,7 +645,7 @@ body {
 .chart-container {
     position: relative;
     height: 450px;
-    background: var(--bg-tertiary);
+    background: #fff;
     border-radius: var(--radius-lg);
     padding: var(--spacing-md);
 }
