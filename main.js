@@ -219,7 +219,7 @@ async function autoCheck() {
 
     const stake = parseFloat(stakeEl.value) || 1;
     const symbol = symbolEl.value;
-    const contract_type = d.action.includes('BUY') ? 'CALL' : 'PUT';
+    const contract_type = d.action.includes('BUY') ? 'PUT' : 'CALL';
     
     // Optimize duration based on market conditions
     const durationOptimization = optimizeTradeDuration(
