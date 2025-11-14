@@ -509,119 +509,134 @@ function advancedDecisionEngine(candles) {
     const trendSignal = (price > ma14Now ? 1 : -1) * agentWeights.ma;
     const momentumSignal = ((price - prevPrice) / prevPrice * 1000) * agentWeights.momentum;
     const rsiSignal = (rsiNow < 30 ? 1 : (rsiNow > 70 ? -1 : 0)) * agentWeights.rsi;
-    // ... previous imports and code ...
-
-// -- Decision and Signal Calculation --
-
-const bbSignal = (price <= bbNow.lower ? 1 : (price >= bbNow.upper ? -1 : 0)) * agentWeights.bb;
-const macdSignal = (macdNow > 0 ? 1 : -1) * 0.8;
-
-// Pattern signal
-let patternSignal = 0;
-if (pattern.signal === 'BULLISH' || pattern.signal === 'STRONG_BULLISH') patternSignal = pattern.strength;
-if (pattern.signal === 'BEARISH' || pattern.signal === 'STRONG_BEARISH') patternSignal = -pattern.strength;
-
-// Micro-structure signal
-let microSignal = 0;
-if (microAnalysis.prediction === 'BULLISH_CONTINUATION') microSignal = 0.6;
-if (microAnalysis.prediction === 'BEARISH_CONTINUATION') microSignal = -0.6;
-if (microAnalysis.prediction === 'REVERSAL_UP') microSignal = 0.7;
-if (microAnalysis.prediction === 'REVERSAL_DOWN') microSignal = -0.7;
-
-// Mood adjustment
-let moodSignal = 0;
-if (mood.mood === 'BULLISH') moodSignal = mood.strength * 0.5;
-if (mood.mood === 'BEARISH') moodSignal = -mood.strength * 0.5;
-
-// Composite signal
-const compositeSignal = trendSignal + momentumSignal + rsiSignal + bbSignal +
-                       macdSignal + patternSignal + microSignal + moodSignal;
-
-// Build decision rationale
-const rationale = buildDecisionRationale(
-    { trend: trendSignal, momentum: momentumSignal, rsi: rsiSignal, 
-      bb: bbSignal, macd: macdSignal, pattern: patternSignal, micro: microSignal },
-    agentWeights, mood, temporal, environment
-);
-rationale.composite.normalized = compositeSignal;
-
-// Adaptive confidence calculation
-const baseConfidence = calculateAdaptiveConfidence(
-    compositeSignal, 
-    { pattern, volatility, closes, ma14Now, ma50Now, rsiNow, bbNow }, 
-    marketRegime, 
-    mood, 
-    temporal, 
-    recentPerformance
-);
-
-// Store last trade context
-const lastTrade = JSON.parse(localStorage.getItem('lastTrade') || '{}');
-
-// Volatility filter
-if (volatility < 0.002) {
-    return { 
-        action: 'HOLD', 
-        reason: 'Extremely low volatility - no edge', 
-        confidence: 0,
-        indicators: { ma14Now, ma50Now, rsiNow, bbNow, volatility, atr: atrNow, pattern, microAnalysis },
-        mood, temporal, environment, rationale, agent: activeAgent.name
+    const bbSignal = (price <= bbNow.lower ? 1 : (price >= bbNow.upper ? -1 : 0)) * agentWeights.bb;
+    const macdSignal = (macdNow > 0 ? 1 : -1) * 0.8;
+    
+    // Pattern signal
+    let patternSignal = 0;
+    if (pattern.signal === 'BULLISH' || pattern.signal === 'STRONG_BULLISH') patternSignal = pattern.strength;
+    if (pattern.signal === 'BEARISH' || pattern.signal === 'STRONG_BEARISH') patternSignal = -pattern.strength;
+    
+    // Micro-structure signal
+    let microSignal = 0;
+    if (microAnalysis.prediction === 'BULLISH_CONTINUATION') microSignal = 0.6;
+    if (microAnalysis.prediction === 'BEARISH_CONTINUATION') microSignal = -0.6;
+    if (microAnalysis.prediction === 'REVERSAL_UP') microSignal = 0.7;
+    if (microAnalysis.prediction === 'REVERSAL_DOWN') microSignal = -0.7;
+    
+    // Mood adjustment
+    let moodSignal = 0;
+    if (mood.mood === 'BULLISH') moodSignal = mood.strength * 0.5;
+    if (mood.mood === 'BEARISH') moodSignal = -mood.strength * 0.5;
+    
+    // Composite signal
+    const compositeSignal = trendSignal + momentumSignal + rsiSignal + bbSignal + 
+                           macdSignal + patternSignal + microSignal + moodSignal;
+    
+    // Build decision rationale
+    const rationale = buildDecisionRationale(
+        { trend: trendSignal, momentum: momentumSignal, rsi: rsiSignal, 
+          bb: bbSignal, macd: macdSignal, pattern: patternSignal, micro: microSignal },
+        agentWeights, mood, temporal, environment
+    );
+    rationale.composite.normalized = compositeSignal;
+    
+    // Adaptive confidence calculation
+    const baseConfidence = calculateAdaptiveConfidence(
+        compositeSignal, 
+        { pattern, volatility, closes, ma14Now, ma50Now, rsiNow, bbNow }, 
+        marketRegime, 
+        mood, 
+        temporal, 
+        recentPerformance
+    );
+    
+    // Store last trade context
+    const lastTrade = JSON.parse(localStorage.getItem('lastTrade') || '{}');
+    
+    // Volatility filter
+    if (volatility < 0.002) {
+        return { 
+            action: 'HOLD', 
+            reason: 'Extremely low volatility - no edge', 
+            confidence: 0,
+            indicators: { ma14Now, ma50Now, rsiNow, bbNow, volatility, atr: atrNow, pattern, microAnalysis },
+            mood, temporal, environment, rationale, agent: activeAgent.name
+        };
+    }
+    
+    // Decision logic with enhanced thresholds
+    let action = 'HOLD';
+    let reason = 'No clear signal';
+    
+    // Apply environment and mood filters
+    const environmentMultiplier = environment.clarity > 0.6 ? 1.1 : 0.95;
+    const adjustedThreshold = 2.0 / environmentMultiplier;
+    
+    if (compositeSignal > adjustedThreshold && baseConfidence > 0.55) {
+        action = compositeSignal > (4 / environmentMultiplier) ? 'STRONG BUY' : 'BUY';
+        reason = `Bullish composite signal (${compositeSignal.toFixed(2)}) | ${marketRegime.type} | ${pattern.pattern} | ${mood.mood}`;
+    } else if (compositeSignal < -adjustedThreshold && baseConfidence > 0.55) {
+        action = compositeSignal < -(4 / environmentMultiplier) ? 'STRONG SELL' : 'SELL';
+        reason = `Bearish composite signal (${compositeSignal.toFixed(2)}) | ${marketRegime.type} | ${pattern.pattern} | ${mood.mood}`;
+    } else if (Math.abs(compositeSignal) > 1.5 && baseConfidence > 0.7 && environment.clarity > 0.5) {
+        action = compositeSignal > 0 ? 'BUY' : 'SELL';
+        reason = `Moderate ${compositeSignal > 0 ? 'bullish' : 'bearish'} signal with high confidence and clarity`;
+    } else {
+        reason = `Insufficient signal strength (${compositeSignal.toFixed(2)}) or confidence (${(baseConfidence * 100).toFixed(0)}%) | Clarity: ${environment.clarity.toFixed(2)}`;
+    }
+    
+    // Multi-stage confirmation
+    const confirmed = confirmDecision(action, { pattern, volatility, atr: atrNow, bbNow }, recentTrades, baseConfidence, temporal);
+    
+    // Check for mood-decision conflict
+    if (mood.mood === 'BULLISH' && confirmed.decision.includes('SELL') && mood.strength > 0.6) {
+        confirmed.confidence *= 0.88;
+        confirmed.adjustments.push('Mood conflict: bullish mood vs sell signal');
+    } else if (mood.mood === 'BEARISH' && confirmed.decision.includes('BUY') && mood.strength > 0.6) {
+        confirmed.confidence *= 0.88;
+        confirmed.adjustments.push('Mood conflict: bearish mood vs buy signal');
+    }
+    
+    // Check for repeating same losing direction
+    if (lastTrade.result === 'LOSS' && confirmed.decision === lastTrade.decision) {
+        confirmed.confidence *= 0.82;
+        confirmed.adjustments.push('Penalized: repeating last losing direction');
+    }
+    
+    // Store decision in memory
+    decisionMemory.push({
+        time: new Date().toISOString(),
+        decision: confirmed.decision,
+        confidence: confirmed.confidence,
+        compositeSignal,
+        mood: mood.mood,
+        regime: marketRegime.type
+    });
+    
+    // Keep last 50 decisions
+    if (decisionMemory.length > 50) decisionMemory.shift();
+    
+    return {
+        action: confirmed.decision,
+        reason: reason + (confirmed.adjustments.length > 1 ? ' | Adjustments: ' + confirmed.adjustments.join(', ') : ''),
+        confidence: confirmed.confidence,
+        compositeSignal,
+        indicators: { 
+            ma14Now, ma50Now, rsiNow, bbNow, volatility, 
+            atr: atrNow, macd: macdNow, pattern, microAnalysis 
+        },
+        regime: marketRegime,
+        mood,
+        temporal,
+        environment,
+        rationale,
+        agent: activeAgent.name,
+        agentStats: { winRate: activeAgent.winRate, trades: activeAgent.trades },
+        weights: { ...agentWeights },
+        adjustments: confirmed.adjustments
     };
 }
-
-// Decision logic with enhanced thresholds
-let action = 'HOLD';
-let reason = 'No clear signal';
-
-// Apply environment and mood filters
-const environmentMultiplier = environment.clarity > 0.6 ? 1.1 : 0.95;
-const adjustedThreshold = 2.0 / environmentMultiplier;
-
-if (compositeSignal > adjustedThreshold && baseConfidence > 0.55) {
-    action = compositeSignal > (4 / environmentMultiplier) ? 'STRONG BUY' : 'BUY';
-    reason = `Bullish composite signal (${compositeSignal.toFixed(2)}) | ${marketRegime.type} | ${pattern.pattern} | ${mood.mood}`;
-} else if (compositeSignal < -adjustedThreshold && baseConfidence > 0.55) {
-    action = compositeSignal < (-4 / environmentMultiplier) ? 'STRONG SELL' : 'SELL';
-    reason = `Bearish composite signal (${compositeSignal.toFixed(2)}) | ${marketRegime.type} | ${pattern.pattern} | ${mood.mood}`;
-} else if (Math.abs(compositeSignal) > 1.2 && baseConfidence > 0.62) {
-    action = compositeSignal > 0 ? 'BUY' : 'SELL';
-    reason = `Moderate ${compositeSignal > 0 ? 'bullish' : 'bearish'} composite signal`;
-}
-
-// ======== TREND-ALIGNMENT VETO FILTER (Robust, Precise, Simple) ========
-const STRONG_TREND_THRESHOLD = 1.5;  // You may calibrate this threshold
-if (
-    (action === 'STRONG SELL' || action === 'SELL') &&
-    trendSignal >= STRONG_TREND_THRESHOLD
-) {
-    // Strong uptrend detected, veto STRONG SELL/SELL
-    action = 'HOLD';
-    reason += ' | VETOED: Uptrend opposes SELL action';
-}
-if (
-    (action === 'STRONG BUY' || action === 'BUY') &&
-    trendSignal <= -STRONG_TREND_THRESHOLD
-) {
-    // Strong downtrend detected, veto STRONG BUY/BUY
-    action = 'HOLD';
-    reason += ' | VETOED: Downtrend opposes BUY action';
-}
-// =======================================================================
-
-// Return final decision object
-return {
-    action,
-    reason,
-    confidence: baseConfidence,
-    indicators: { ma14Now, ma50Now, rsiNow, bbNow, volatility, atr: atrNow, pattern, microAnalysis },
-    mood,
-    temporal,
-    environment,
-    rationale,
-    agent: activeAgent.name,
-    compositeSignal
-};
-
 
 /* ---------- Performance Tracking ---------- */
 function updatePerformanceMetrics(record) {
