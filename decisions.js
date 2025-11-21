@@ -208,7 +208,7 @@ function confirmDecision(decision, indicators, recentResults, confidence, tempor
     }
     
     // Volatility safety check
-    if (indicators.volatility > 0.025 && consecutiveLosses >= 3) {
+    if (indicators.volatility > 0.02 && consecutiveLosses >= 2) {
         adjustedDecision = 'HOLD';
         adjustedConfidence = 0;
         adjustments.push('High volatility + losses → HOLD');
@@ -248,7 +248,7 @@ function confirmDecision(decision, indicators, recentResults, confidence, tempor
     }
     
     // Confidence floor check
-    if (adjustedConfidence < 0.45 && adjustedDecision !== 'HOLD') {
+    if (adjustedConfidence < 0.55 && adjustedDecision !== 'HOLD') {
         adjustedDecision = 'HOLD';
         adjustments.push('Confidence below threshold');
     }
@@ -274,10 +274,10 @@ function preDecisionLayerAnalysis(candles, indicators) {
     const ma50 = indicators.ma50Now;
     const price = candles[candles.length - 1].close;
     
-    if (ma14 > ma50 * 1.002) {
+    if (ma14 > ma50 * 1.003) {
         environment.trend = 'UPTREND';
         environment.strength = Math.min((ma14 / ma50 - 1) * 100, 1);
-    } else if (ma14 < ma50 * 0.998) {
+    } else if (ma14 < ma50 * 0.997) {
         environment.trend = 'DOWNTREND';
         environment.strength = Math.min((1 - ma14 / ma50) * 100, 1);
     } else {
@@ -386,7 +386,7 @@ function calculateAdaptiveConfidence(compositeSignal, indicators, regime, mood, 
     }
     
     // Cap confidence
-    return Math.max(0.25, Math.min(0.98, confidence*1.05));
+    return Math.max(0.2, Math.min(0.95, confidence));
 }
 
 /* ---------- Adaptive Duration Optimization ---------- */
@@ -580,12 +580,12 @@ function advancedDecisionEngine(candles) {
     
     // Apply environment and mood filters
     const environmentMultiplier = environment.clarity > 0.6 ? 1.1 : 0.95;
-    const adjustedThreshold = 2.0 / environmentMultiplier;
+    const adjustedThreshold = 2.5 / environmentMultiplier;
     
-    if (compositeSignal > adjustedThreshold && baseConfidence > 0.55) {
+    if (compositeSignal > adjustedThreshold && baseConfidence > 0.65) {
         action = compositeSignal > (4 / environmentMultiplier) ? 'STRONG BUY' : 'BUY';
         reason = `Bullish composite signal (${compositeSignal.toFixed(2)}) | ${marketRegime.type} | ${pattern.pattern} | ${mood.mood}`;
-    } else if (compositeSignal < -adjustedThreshold && baseConfidence > 0.55) {
+    } else if (compositeSignal < -adjustedThreshold && baseConfidence > 0.65) {
         action = compositeSignal < -(4 / environmentMultiplier) ? 'STRONG SELL' : 'SELL';
         reason = `Bearish composite signal (${compositeSignal.toFixed(2)}) | ${marketRegime.type} | ${pattern.pattern} | ${mood.mood}`;
     } else if (Math.abs(compositeSignal) > 1.5 && baseConfidence > 0.7 && environment.clarity > 0.5) {
