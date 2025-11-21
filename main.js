@@ -212,7 +212,7 @@ async function autoCheck() {
     updateIndicatorsUI(d.indicators);
     appendFeed(`Decision: ${d.action} (${d.reason})`, 'info');
 
-    if (d.action === 'HOLD' || d.confidence < 0.55) {
+    if (d.action === 'HOLD' || d.confidence < 0.75) {
         appendFeed(`Holding position - Signal strength insufficient (Conf: ${(d.confidence * 100).toFixed(0)}%)`, 'info');
         return;
     }
