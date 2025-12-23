@@ -187,7 +187,7 @@ function updateIndicatorWeights(regime, recentPerformance) {
     }
 }
 
-/* ---------- Candlestick Pattern Recognition ---------- */
+/* ---------- Enhanced Candlestick Pattern Recognition ---------- */
 function identifyCandlestickPattern(candles) {
     if (candles.length < 3) return { pattern: 'NONE', strength: 0, signal: 'NEUTRAL' };
     
@@ -199,83 +199,306 @@ function identifyCandlestickPattern(candles) {
     const body2 = Math.abs(c2.close - c2.open);
     const body3 = Math.abs(c3.close - c3.open);
     
+    const range1 = c1.high - c1.low;
+    const range2 = c2.high - c2.low;
+    const range3 = c3.high - c3.low;
+    
+    const upperWick1 = c1.high - Math.max(c1.open, c1.close);
+    const lowerWick1 = Math.min(c1.open, c1.close) - c1.low;
+    const upperWick2 = c2.high - Math.max(c2.open, c2.close);
+    const lowerWick2 = Math.min(c2.open, c2.close) - c2.low;
     const upperWick3 = c3.high - Math.max(c3.open, c3.close);
     const lowerWick3 = Math.min(c3.open, c3.close) - c3.low;
-    const bodyRange3 = c3.high - c3.low;
+    
+    const isBullish1 = c1.close > c1.open;
+    const isBullish2 = c2.close > c2.open;
+    const isBullish3 = c3.close > c3.open;
+    
+    // === EXISTING PATTERNS (keep your original code) ===
     
     // Doji detection
-    if (body3 < bodyRange3 * 0.1 && bodyRange3 > 0) {
+    if (body3 < range3 * 0.1 && range3 > 0) {
         return { pattern: 'DOJI', strength: 0.7, signal: 'REVERSAL_PENDING' };
     }
     
     // Hammer / Inverted Hammer
-    if (lowerWick3 > body3 * 2 && upperWick3 < body3 * 0.3 && c3.close > c3.open) {
+    if (lowerWick3 > body3 * 2 && upperWick3 < body3 * 0.3 && isBullish3) {
         return { pattern: 'HAMMER', strength: 0.8, signal: 'BULLISH' };
     }
-    if (upperWick3 > body3 * 2 && lowerWick3 < body3 * 0.3 && c3.close < c3.open) {
+    if (upperWick3 > body3 * 2 && lowerWick3 < body3 * 0.3 && !isBullish3) {
         return { pattern: 'SHOOTING_STAR', strength: 0.8, signal: 'BEARISH' };
     }
     
     // Engulfing patterns
-    if (c2.close < c2.open && c3.close > c3.open && c3.open < c2.close && c3.close > c2.open && body3 > body2 * 1.2) {
+    if (!isBullish2 && isBullish3 && c3.open < c2.close && c3.close > c2.open && body3 > body2 * 1.2) {
         return { pattern: 'BULLISH_ENGULFING', strength: 0.85, signal: 'BULLISH' };
     }
-    if (c2.close > c2.open && c3.close < c3.open && c3.open > c2.close && c3.close < c2.open && body3 > body2 * 1.2) {
+    if (isBullish2 && !isBullish3 && c3.open > c2.close && c3.close < c2.open && body3 > body2 * 1.2) {
         return { pattern: 'BEARISH_ENGULFING', strength: 0.85, signal: 'BEARISH' };
     }
     
     // Three white soldiers / Three black crows
-    if (c1.close > c1.open && c2.close > c2.open && c3.close > c3.open &&
-        c2.close > c1.close && c3.close > c2.close) {
+    if (isBullish1 && isBullish2 && isBullish3 && c2.close > c1.close && c3.close > c2.close) {
         return { pattern: 'THREE_WHITE_SOLDIERS', strength: 0.9, signal: 'STRONG_BULLISH' };
     }
-    if (c1.close < c1.open && c2.close < c2.open && c3.close < c3.open &&
-        c2.close < c1.close && c3.close < c2.close) {
+    if (!isBullish1 && !isBullish2 && !isBullish3 && c2.close < c1.close && c3.close < c2.close) {
         return { pattern: 'THREE_BLACK_CROWS', strength: 0.9, signal: 'STRONG_BEARISH' };
     }
-
-    // Example extension (add inside identifyCandlestickPattern):
-
-// Bullish Harami
-if (c2.close < c2.open && c3.open > c3.close && Math.abs(c3.close - c3.open) < Math.abs(c2.close - c2.open) &&
-    c3.open > c2.close && c3.close < c2.open) {
-    return { pattern: 'BULLISH_HARAMI', strength: 0.75, signal: 'BULLISH' };
-}
-
-// Bearish Harami
-if (c2.close > c2.open && c3.open < c3.close && Math.abs(c3.close - c3.open) < Math.abs(c2.close - c2.open) &&
-    c3.open < c2.close && c3.close > c2.open) {
-    return { pattern: 'BEARISH_HARAMI', strength: 0.75, signal: 'BEARISH' };
-}
-
-// Morning Star
-if (c1.close < c1.open && // Large down
-    Math.abs(c2.close - c2.open) < (c1.close - c1.open) * 0.5 && // Small body, gaps
-    c3.close > c3.open && c3.close > ((c1.open + c1.close)/2)) { // Large up closes into 1st
-    return { pattern: 'MORNING_STAR', strength: 0.85, signal: 'BULLISH' };
-}
-
-// Evening Star
-if (c1.close > c1.open &&
-    Math.abs(c2.close - c2.open) < (c1.close - c1.open) * 0.5 &&
-    c3.close < c3.open && c3.close < ((c1.open + c1.close)/2)) {
-    return { pattern: 'EVENING_STAR', strength: 0.85, signal: 'BEARISH' };
-}
-
-// Tweezer Top
-if (c2.high === c3.high && c2.close > c2.open && c3.close < c3.open) {
-    return { pattern: 'TWEEZER_TOP', strength: 0.8, signal: 'BEARISH' };
-}
-
-// Tweezer Bottom
-if (c2.low === c3.low && c2.close < c2.open && c3.close > c3.open) {
-    return { pattern: 'TWEEZER_BOTTOM', strength: 0.8, signal: 'BULLISH' };
-}
-
-// Add additional patterns similarly...
+    
+    // === NEW PATTERNS BELOW ===
+    
+    // Morning Star (Bullish reversal)
+    if (!isBullish1 && body2 < range2 * 0.3 && isBullish3 && 
+        c2.close < c1.close && c3.close > (c1.open + c1.close) / 2) {
+        return { pattern: 'MORNING_STAR', strength: 0.88, signal: 'STRONG_BULLISH' };
+    }
+    
+    // Evening Star (Bearish reversal)
+    if (isBullish1 && body2 < range2 * 0.3 && !isBullish3 && 
+        c2.close > c1.close && c3.close < (c1.open + c1.close) / 2) {
+        return { pattern: 'EVENING_STAR', strength: 0.88, signal: 'STRONG_BEARISH' };
+    }
+    
+    // Piercing Pattern (Bullish reversal)
+    if (!isBullish2 && isBullish3 && c3.open < c2.low && 
+        c3.close > (c2.open + c2.close) / 2 && c3.close < c2.open) {
+        return { pattern: 'PIERCING_PATTERN', strength: 0.82, signal: 'BULLISH' };
+    }
+    
+    // Dark Cloud Cover (Bearish reversal)
+    if (isBullish2 && !isBullish3 && c3.open > c2.high && 
+        c3.close < (c2.open + c2.close) / 2 && c3.close > c2.open) {
+        return { pattern: 'DARK_CLOUD_COVER', strength: 0.82, signal: 'BEARISH' };
+    }
+    
+    // Harami (Bullish)
+    if (!isBullish2 && isBullish3 && c3.open > c2.close && 
+        c3.close < c2.open && body3 < body2 * 0.5) {
+        return { pattern: 'BULLISH_HARAMI', strength: 0.75, signal: 'BULLISH' };
+    }
+    
+    // Harami (Bearish)
+    if (isBullish2 && !isBullish3 && c3.open < c2.close && 
+        c3.close > c2.open && body3 < body2 * 0.5) {
+        return { pattern: 'BEARISH_HARAMI', strength: 0.75, signal: 'BEARISH' };
+    }
+    
+    // Tweezer Bottom (Bullish reversal)
+    if (!isBullish2 && isBullish3 && Math.abs(c2.low - c3.low) < range2 * 0.05) {
+        return { pattern: 'TWEEZER_BOTTOM', strength: 0.78, signal: 'BULLISH' };
+    }
+    
+    // Tweezer Top (Bearish reversal)
+    if (isBullish2 && !isBullish3 && Math.abs(c2.high - c3.high) < range2 * 0.05) {
+        return { pattern: 'TWEEZER_TOP', strength: 0.78, signal: 'BEARISH' };
+    }
+    
+    // Hanging Man (Bearish reversal)
+    if (lowerWick3 > body3 * 2 && upperWick3 < body3 * 0.5 && 
+        isBullish3 && c3.close > c2.close) {
+        return { pattern: 'HANGING_MAN', strength: 0.76, signal: 'BEARISH' };
+    }
+    
+    // Inverted Hammer (Bullish reversal)
+    if (upperWick3 > body3 * 2 && lowerWick3 < body3 * 0.5 && 
+        isBullish3 && c3.close < c2.close) {
+        return { pattern: 'INVERTED_HAMMER', strength: 0.76, signal: 'BULLISH' };
+    }
+    
+    // Dragonfly Doji (Bullish reversal)
+    if (body3 < range3 * 0.1 && lowerWick3 > range3 * 0.6 && upperWick3 < range3 * 0.1) {
+        return { pattern: 'DRAGONFLY_DOJI', strength: 0.77, signal: 'BULLISH' };
+    }
+    
+    // Gravestone Doji (Bearish reversal)
+    if (body3 < range3 * 0.1 && upperWick3 > range3 * 0.6 && lowerWick3 < range3 * 0.1) {
+        return { pattern: 'GRAVESTONE_DOJI', strength: 0.77, signal: 'BEARISH' };
+    }
+    
+    // Long-Legged Doji (Indecision)
+    if (body3 < range3 * 0.1 && lowerWick3 > range3 * 0.3 && upperWick3 > range3 * 0.3) {
+        return { pattern: 'LONG_LEGGED_DOJI', strength: 0.72, signal: 'REVERSAL_PENDING' };
+    }
+    
+    // Marubozu Bullish (Strong continuation)
+    if (isBullish3 && body3 > range3 * 0.95) {
+        return { pattern: 'BULLISH_MARUBOZU', strength: 0.83, signal: 'STRONG_BULLISH' };
+    }
+    
+    // Marubozu Bearish (Strong continuation)
+    if (!isBullish3 && body3 > range3 * 0.95) {
+        return { pattern: 'BEARISH_MARUBOZU', strength: 0.83, signal: 'STRONG_BEARISH' };
+    }
+    
+    // Spinning Top (Indecision)
+    if (body3 < range3 * 0.3 && upperWick3 > body3 && lowerWick3 > body3) {
+        return { pattern: 'SPINNING_TOP', strength: 0.65, signal: 'NEUTRAL' };
+    }
+    
+    // Three Inside Up (Bullish reversal)
+    if (!isBullish1 && !isBullish2 && isBullish3 && 
+        c2.open > c1.close && c2.close < c1.open && 
+        c3.close > c1.open && body2 < body1 * 0.5) {
+        return { pattern: 'THREE_INSIDE_UP', strength: 0.86, signal: 'STRONG_BULLISH' };
+    }
+    
+    // Three Inside Down (Bearish reversal)
+    if (isBullish1 && isBullish2 && !isBullish3 && 
+        c2.open < c1.close && c2.close > c1.open && 
+        c3.close < c1.open && body2 < body1 * 0.5) {
+        return { pattern: 'THREE_INSIDE_DOWN', strength: 0.86, signal: 'STRONG_BEARISH' };
+    }
+    
+    // Three Outside Up (Bullish reversal)
+    if (!isBullish1 && !isBullish2 && isBullish3 && 
+        c2.open < c1.close && c2.close > c1.open && 
+        c3.close > c2.close && body2 > body1) {
+        return { pattern: 'THREE_OUTSIDE_UP', strength: 0.87, signal: 'STRONG_BULLISH' };
+    }
+    
+    // Three Outside Down (Bearish reversal)
+    if (isBullish1 && isBullish2 && !isBullish3 && 
+        c2.open > c1.close && c2.close < c1.open && 
+        c3.close < c2.close && body2 > body1) {
+        return { pattern: 'THREE_OUTSIDE_DOWN', strength: 0.87, signal: 'STRONG_BEARISH' };
+    }
+    
+    // Rising Three Methods (Bullish continuation)
+    if (candles.length >= 5) {
+        const c0 = candles[candles.length - 5];
+        const c4 = candles[candles.length - 4];
+        if (c0.close > c0.open && isBullish3 && 
+            !isBullish1 && !isBullish2 && 
+            c3.close > c0.close && c1.high < c0.high) {
+            return { pattern: 'RISING_THREE_METHODS', strength: 0.84, signal: 'BULLISH' };
+        }
+    }
+    
+    // Falling Three Methods (Bearish continuation)
+    if (candles.length >= 5) {
+        const c0 = candles[candles.length - 5];
+        const c4 = candles[candles.length - 4];
+        if (c0.close < c0.open && !isBullish3 && 
+            isBullish1 && isBullish2 && 
+            c3.close < c0.close && c1.low > c0.low) {
+            return { pattern: 'FALLING_THREE_METHODS', strength: 0.84, signal: 'BEARISH' };
+        }
+    }
+    
+    // Abandoned Baby Bullish (Rare reversal)
+    if (!isBullish1 && body2 < range2 * 0.2 && isBullish3 && 
+        c2.high < c1.low && c2.high < c3.low) {
+        return { pattern: 'ABANDONED_BABY_BULLISH', strength: 0.92, signal: 'STRONG_BULLISH' };
+    }
+    
+    // Abandoned Baby Bearish (Rare reversal)
+    if (isBullish1 && body2 < range2 * 0.2 && !isBullish3 && 
+        c2.low > c1.high && c2.low > c3.high) {
+        return { pattern: 'ABANDONED_BABY_BEARISH', strength: 0.92, signal: 'STRONG_BEARISH' };
+    }
+    
+    // Upside Gap Two Crows (Bearish reversal)
+    if (isBullish1 && !isBullish2 && !isBullish3 && 
+        c2.open > c1.close && c3.open > c2.open && c3.close < c2.close) {
+        return { pattern: 'UPSIDE_GAP_TWO_CROWS', strength: 0.79, signal: 'BEARISH' };
+    }
+    
+    // Mat Hold (Bullish continuation)
+    if (candles.length >= 5) {
+        const c0 = candles[candles.length - 5];
+        if (c0.close > c0.open && isBullish3 && 
+            !isBullish1 && c3.close > c0.close) {
+            return { pattern: 'MAT_HOLD', strength: 0.81, signal: 'BULLISH' };
+        }
+    }
+    
+    // Belt Hold Bullish
+    if (isBullish3 && lowerWick3 < body3 * 0.1 && body3 > range3 * 0.7) {
+        return { pattern: 'BULLISH_BELT_HOLD', strength: 0.74, signal: 'BULLISH' };
+    }
+    
+    // Belt Hold Bearish
+    if (!isBullish3 && upperWick3 < body3 * 0.1 && body3 > range3 * 0.7) {
+        return { pattern: 'BEARISH_BELT_HOLD', strength: 0.74, signal: 'BEARISH' };
+    }
+    
+    // Breakaway Bullish (5-candle pattern)
+    if (candles.length >= 5) {
+        const c0 = candles[candles.length - 5];
+        if (!c0.close > c0.open && isBullish3 && c3.close > c0.open) {
+            return { pattern: 'BREAKAWAY_BULLISH', strength: 0.80, signal: 'BULLISH' };
+        }
+    }
+    
+    // Kicking Bullish
+    if (!isBullish2 && isBullish3 && body2 > range2 * 0.9 && body3 > range3 * 0.9 && c3.open > c2.close) {
+        return { pattern: 'KICKING_BULLISH', strength: 0.89, signal: 'STRONG_BULLISH' };
+    }
+    
+    // Kicking Bearish
+    if (isBullish2 && !isBullish3 && body2 > range2 * 0.9 && body3 > range3 * 0.9 && c3.open < c2.close) {
+        return { pattern: 'KICKING_BEARISH', strength: 0.89, signal: 'STRONG_BEARISH' };
+    }
+    
+    // Ladder Bottom (Bullish reversal)
+    if (candles.length >= 5) {
+        const c0 = candles[candles.length - 5];
+        const c4 = candles[candles.length - 4];
+        if (!c0.close > c0.open && !c4.close > c4.open && !isBullish1 && 
+            !isBullish2 && isBullish3 && c3.close > c2.open) {
+            return { pattern: 'LADDER_BOTTOM', strength: 0.85, signal: 'BULLISH' };
+        }
+    }
+    
+    // Ladder Top (Bearish reversal)
+    if (candles.length >= 5) {
+        const c0 = candles[candles.length - 5];
+        const c4 = candles[candles.length - 4];
+        if (c0.close > c0.open && c4.close > c4.open && isBullish1 && 
+            isBullish2 && !isBullish3 && c3.close < c2.open) {
+            return { pattern: 'LADDER_TOP', strength: 0.85, signal: 'BEARISH' };
+        }
+    }
+    
+    // Concealing Baby Swallow (Bullish continuation)
+    if (!isBullish1 && !isBullish2 && !isBullish3 && 
+        c2.open < c1.open && c3.open > c2.close && c3.close > c2.open) {
+        return { pattern: 'CONCEALING_BABY_SWALLOW', strength: 0.83, signal: 'BULLISH' };
+    }
+    
+    // Stick Sandwich (Bullish reversal)
+    if (!isBullish1 && isBullish2 && !isBullish3 && 
+        Math.abs(c1.close - c3.close) < body1 * 0.1) {
+        return { pattern: 'STICK_SANDWICH', strength: 0.73, signal: 'BULLISH' };
+    }
+    
+    // Homing Pigeon (Bullish reversal)
+    if (!isBullish2 && !isBullish3 && c3.open < c2.open && 
+        c3.close > c2.close && body3 < body2 * 0.7) {
+        return { pattern: 'HOMING_PIGEON', strength: 0.71, signal: 'BULLISH' };
+    }
+    
+    // Matching Low (Bullish reversal)
+    if (!isBullish2 && !isBullish3 && Math.abs(c2.close - c3.close) < body2 * 0.1) {
+        return { pattern: 'MATCHING_LOW', strength: 0.70, signal: 'BULLISH' };
+    }
+    
+    // Deliberation (Bearish reversal - after uptrend)
+    if (isBullish1 && isBullish2 && isBullish3 && 
+        body3 < body2 && body2 < body1 && c3.close > c2.close) {
+        return { pattern: 'DELIBERATION', strength: 0.76, signal: 'BEARISH' };
+    }
+    
+    // Advance Block (Bearish reversal)
+    if (isBullish1 && isBullish2 && isBullish3 && 
+        body2 < body1 && body3 < body2 && 
+        upperWick2 > upperWick1 && upperWick3 > upperWick2) {
+        return { pattern: 'ADVANCE_BLOCK', strength: 0.78, signal: 'BEARISH' };
+    }
     
     return { pattern: 'NONE', strength: 0, signal: 'NEUTRAL' };
 }
+
 
 /* ---------- Predictive Micro-Structure Analysis ---------- */
 function analyzeMicroStructure(tickBuffer, currentCandle) {
